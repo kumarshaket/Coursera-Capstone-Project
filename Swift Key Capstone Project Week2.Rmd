@@ -1,0 +1,606 @@
+---
+title: "Swift Key Capstone Project Week 2"
+author: "Kumar Shaket"
+date: "06/07/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(stringr)
+library(tm)
+library(ggplot2)
+library(ngram)
+
+# constants
+co_text_attr_en = "/Users/kumarshaket/Desktop/Coursera/Capstone Project/final/text_attr_en.rds"
+#twitter
+co_tidy_twitter_en = "/Users/kumarshaket/Desktop/Coursera/Capstone Project/final/tidy_twitter_en.rds"
+co_tidy_nostop_twitter_en = "/Users/kumarshaket/Desktop/Coursera/Capstone Project/final/tidy_nostop_twitter_en.rds"
+co_1gram_twitter_en = "/Users/kumarshaket/Desktop/Coursera/Capstone Project/final/1gram_twitter_en.rds"
+co_2gram_twitter_en = "/Users/kumarshaket/Desktop/Coursera/Capstone Project/final/2gram_twitter_en.rds"
+co_3gram_twitter_en = "/Users/kumarshaket/Desktop/Coursera/Capstone Project/final/3gram_twitter_en.rds"
+co_1gram_nostop_twitter_en = "/Users/kumarshaket/Desktop/Coursera/Capstone Project/final/1gram_nostop_twitter_en.rds"
+co_2gram_nostop_twitter_en = "/Users/kumarshaket/Desktop/Coursera/Capstone Project/final/2gram_nostop_twitter_en.rds"
+co_3gram_nostop_twitter_en = "/Users/kumarshaket/Desktop/Coursera/Capstone Project/final/3gram_nostop_twitter_en.rds"
+#news
+co_tidy_news_en = "/Users/kumarshaket/Desktop/Coursera/Capstone Project/final/tidy_news_en.rds"
+co_tidy_nostop_news_en = "/Users/kumarshaket/Desktop/Coursera/Capstone Project/final/tidy_nostop_news_en.rds"
+co_1gram_news_en = "/Users/kumarshaket/Desktop/Coursera/Capstone Project/final/1gram_news_en.rds"
+co_2gram_news_en = "/Users/kumarshaket/Desktop/Coursera/Capstone Project/final/2gram_news_en.rds"
+co_3gram_news_en = "/Users/kumarshaket/Desktop/Coursera/Capstone Project/final/3gram_news_en.rds"
+co_1gram_nostop_news_en = "/Users/kumarshaket/Desktop/Coursera/Capstone Project/final/1gram_nostop_news_en.rds"
+co_2gram_nostop_news_en = "/Users/kumarshaket/Desktop/Coursera/Capstone Project/final/2gram_nostop_news_en.rds"
+co_3gram_nostop_news_en = "/Users/kumarshaket/Desktop/Coursera/Capstone Project/final/3gram_nostop_news_en.rds"
+#blogs
+co_tidy_blog_en = "/Users/kumarshaket/Desktop/Coursera/Capstone Project/final/tidy_blog_en.rds"
+co_tidy_nostop_blog_en = "/Users/kumarshaket/Desktop/Coursera/Capstone Project/final/tidy_nostop_blog_en.rds"
+co_1gram_blog_en = "/Users/kumarshaket/Desktop/Coursera/Capstone Project/final/1gram_blog_en.rds"
+co_2gram_blog_en = "/Users/kumarshaket/Desktop/Coursera/Capstone Project/final/2gram_blog_en.rds"
+co_3gram_blog_en = "/Users/kumarshaket/Desktop/Coursera/Capstone Project/final/3gram_blog_en.rds"
+co_1gram_nostop_blog_en = "/Users/kumarshaket/Desktop/Coursera/Capstone Project/final/1gram_nostop_blog_en.rds"
+co_2gram_nostop_blog_en = "/Users/kumarshaket/Desktop/Coursera/Capstone Project/final/2gram_nostop_blog_en.rds"
+co_3gram_nostop_blog_en = "/Users/kumarshaket/Desktop/Coursera/Capstone Project/final/3gram_nostop_blog_en.rds"
+```
+
+```{r}
+filepath <- "/Users/kumarshaket/Desktop/Coursera/Capstone Project/final/en_US/en_US.twitter.txt"
+con <- file(filepath) 
+lines <- readLines(con, skipNul=TRUE) # 2360148 lines
+close(con)
+
+lines <- tolower(lines)
+# split at all ".", "," and etc.
+lines <- unlist(strsplit(lines, "[.,:;!?(){}<>]+")) # 5398319 lines
+
+# replace all non-alphanumeric characters with a space at the beginning/end of a word.
+lines <- gsub("^[^a-z0-9]+|[^a-z0-9]+$", " ", lines) # at the begining/end of a line
+lines <- gsub("[^a-z0-9]+\\s", " ", lines) # before space
+lines <- gsub("\\s[^a-z0-9]+", " ", lines) # after space
+lines <- gsub("\\s+", " ", lines) # remove mutiple spaces
+lines <- str_trim(lines) # remove spaces at the beginning/end of the line
+saveRDS(lines, file=co_tidy_twitter_en)
+```
+
+```{r}
+lines <- readRDS(file=co_tidy_twitter_en)
+head(lines, 20)
+```
+
+```{r}
+lines <- str_trim(lines) # remove spaces at the beginning/end of the line
+lines <- gsub("\\s+", " ", lines) # remove mutiple spaces
+lines <- lines[nchar(lines)>0] # remove blank lines. reduce the elements from 5398319 to 5059787
+saveRDS(lines, file=co_tidy_nostop_twitter_en)
+```
+
+
+```{r}
+# split words by space
+words <- unlist(strsplit(lines, "\\s+"))
+
+# count word frequence
+word.freq <- table(words)
+
+# convert to data frame
+df <- cbind.data.frame(names(word.freq), as.integer(word.freq))
+names(df) <- c('word', 'freq')
+row.names(df) <- df[,1]
+
+# sort words by frequence descending
+df <- df[order(-df$freq),]
+
+# save as RDS file
+saveRDS(df, file=co_1gram_twitter_en)
+```
+
+```{r}
+# read word frequence data
+df <- readRDS(file=co_1gram_twitter_en)
+# locate "i'm" 
+df["i'm",]
+```
+
+```{r}
+ggplot(df[1:20,], aes(x=reorder(word,freq), freq)) +
+  geom_col() +
+  xlab(NULL) +
+  coord_flip() +
+  labs(title="Twitter Top 20 Word Frequence (with Stop Words)", x=NULL, y="Word Frequency")
+```
+
+```{r}
+plot(df[1:500,]$freq,
+     main='Twitter Top 500 Word Frequence',
+     ylab="Frequence",
+     xlab="Word")
+```
+
+```{r}
+ggplot(data=df[1:250,], aes(x=df[1:250,]$freq)) + 
+  geom_histogram(colour="black", fill="white", breaks=seq(0, 900000,by=3000)) + 
+  labs(title="Histogram of Twitter Top 250 Word Frequence", x="Word Frequency", y="Count")
+```
+
+```{r}
+df <- readRDS(file=co_1gram_twitter_en)
+idx <- unlist(lapply(stopwords("en"), function(stopword){return(which(df$word == stopword))}))
+df <- df[-idx,]
+saveRDS(df, co_1gram_nostop_twitter_en)
+```
+
+```{r}
+df <- readRDS(co_1gram_nostop_twitter_en)
+ggplot(df[1:20,], aes(x=reorder(word,freq), freq)) +
+  geom_col() +
+  xlab(NULL) +
+  coord_flip() +
+  labs(title="Twitter Top 20 Word Frequence (without Stop Words)", x=NULL, y="Word Frequency")
+```
+
+```{r}
+library("RColorBrewer")
+library("wordcloud")
+# generate word cloud
+set.seed(1234)
+wordcloud(words = df$word, freq = df$freq, min.freq = 1,
+          max.words=200, random.order=FALSE, rot.per=0.35, 
+          colors=brewer.pal(8, "Dark2"))
+```
+
+```{r}
+lines[1]
+
+```
+
+```{r}
+print(ngram(lines[1], n=2), output="full")
+```
+
+```{r}
+# remove lines that contain less than 2 words, or ngram() would throw errors.
+lines <- lines[str_count(lines, "\\s+")>0] # 4375507 lines
+bigram <- ngram(lines, n=2) # this line takes long time. probably should sample the text first.
+df <- get.phrasetable(bigram)
+saveRDS(df, co_2gram_twitter_en)
+```
+
+```{r}
+df <- readRDS(co_2gram_twitter_en)
+ggplot(df[1:20,], aes(x=reorder(ngrams,freq), freq)) +
+  geom_col() +
+  xlab(NULL) +
+  coord_flip() +
+  labs(title="Twitter Top 20 2-Gram Frequence (with Stop Words)", x=NULL, y="Word Frequency")
+```
+
+```{r}
+lines <- readRDS(co_tidy_twitter_en)
+# remove lines that contain less than 3 words, or ngram() would throw errors.
+lines <- lines[str_count(lines, "\\s+")>1] # 3803575 lines
+trigram <- ngram(lines, n=3) # this doesn't take long time surprisingly.
+df <- get.phrasetable(trigram)
+saveRDS(df, co_3gram_twitter_en)
+```
+
+```{r}
+df <- readRDS(co_3gram_twitter_en)
+ggplot(df[1:20,], aes(x=reorder(ngrams,freq), freq)) +
+  geom_col() +
+  xlab(NULL) +
+  coord_flip() +
+  labs(title="Twitter Top 20 3-Gram Frequence (with Stop Words)", x=NULL, y="Word Frequency")
+```
+
+```{r}
+lines <- readRDS((co_tidy_nostop_twitter_en))
+# remove lines that contain less than 3 words, or ngram() would throw errors.
+lines <- lines[str_count(lines, "\\s+")>1] # 2780871 lines left
+trigram <- ngram(lines, n=3) # this took less than a minute surprisingly.
+df <- get.phrasetable(trigram)
+saveRDS(df, co_3gram_nostop_twitter_en)
+```
+
+```{r}
+df <- readRDS(co_3gram_nostop_twitter_en)
+ggplot(df[1:20,], aes(x=reorder(ngrams,freq), freq)) +
+  geom_col() +
+  xlab(NULL) +
+  coord_flip() +
+  labs(title="Twitter Top 20 3-Gram Frequence (without Stop Words)", x=NULL, y="Word Frequency")
+```
+
+```{r}
+df <- readRDS(co_1gram_twitter_en) # with stop words
+df$count <- 1
+df$count <- cumsum(df$count)
+df$coverage <- cumsum(df$freq) / sum(df$freq) * 100
+df <- df[df$coverage <= 91,]
+
+# find the word counts for 50% and 90% coverage 
+points <- rbind(tail(df[df$coverage <= 50,], 1), tail(df[df$coverage <= 90,], 1))
+
+ggplot(data=df, aes(x=count, y=coverage, group=1)) +
+  geom_line()+
+  geom_point(data=points, colour="red", size=3) +
+  geom_text(data=points, aes(label=count), hjust=-1, vjust=1) +
+  ggtitle("Number of Words to Cover Twitter Text (with Stop Words)") +
+  xlab("Number of Words") +
+  ylab("Coverage Percentage")
+```
+
+# News 
+```{r}
+filepath <- "/Users/kumarshaket/Desktop/Coursera/Capstone Project/final/en_US/en_US.news.txt"
+con <- file(filepath) 
+lines_news <- readLines(con, skipNul=TRUE) # 2360148 lines
+close(con)
+
+lines_news <- tolower(lines_news)
+# split at all ".", "," and etc.
+lines_news <- unlist(strsplit(lines_news, "[.,:;!?(){}<>]+")) # 5398319 lines
+
+# replace all non-alphanumeric characters with a space at the beginning/end of a word.
+lines_news <- gsub("^[^a-z0-9]+|[^a-z0-9]+$", " ", lines_news) # at the begining/end of a line
+lines_news <- gsub("[^a-z0-9]+\\s", " ", lines_news) # before space
+lines_news <- gsub("\\s[^a-z0-9]+", " ", lines_news) # after space
+lines_news <- gsub("\\s+", " ", lines_news) # remove mutiple spaces
+lines_news <- str_trim(lines_news) # remove spaces at the beginning/end of the line
+saveRDS(lines_news, file=co_tidy_news_en)
+```
+
+```{r}
+lines_news <- readRDS(file=co_tidy_news_en)
+head(lines_news, 20)
+```
+
+```{r}
+lines_news <- str_trim(lines_news) # remove spaces at the beginning/end of the line
+lines_news <- gsub("\\s+", " ", lines_news) # remove mutiple spaces
+lines_news <- lines_news[nchar(lines_news)>0] # remove blank lines. reduce the elements from 5398319 to 5059787
+saveRDS(lines_news, file=co_tidy_nostop_news_en)
+```
+
+
+```{r}
+# split words by space
+words <- unlist(strsplit(lines_news, "\\s+"))
+
+# count word frequence
+word.freq <- table(words)
+
+# convert to data frame
+df <- cbind.data.frame(names(word.freq), as.integer(word.freq))
+names(df) <- c('word', 'freq')
+row.names(df) <- df[,1]
+
+# sort words by frequence descending
+df <- df[order(-df$freq),]
+
+# save as RDS file
+saveRDS(df, file=co_1gram_news_en)
+```
+
+```{r}
+# read word frequence data
+df <- readRDS(file=co_1gram_news_en)
+# locate "i'm" 
+df["i'm",]
+```
+
+```{r}
+ggplot(df[1:20,], aes(x=reorder(word,freq), freq)) +
+  geom_col() +
+  xlab(NULL) +
+  coord_flip() +
+  labs(title="News Top 20 Word Frequence (with Stop Words)", x=NULL, y="Word Frequency")
+```
+
+```{r}
+plot(df[1:500,]$freq,
+     main='News Top 500 Word Frequence',
+     ylab="Frequence",
+     xlab="Word")
+```
+
+```{r}
+ggplot(data=df[1:250,], aes(x=df[1:250,]$freq)) + 
+  geom_histogram(colour="black", fill="white", breaks=seq(0, 900000,by=3000)) + 
+  labs(title="Histogram of News Top 250 Word Frequence", x="Word Frequency", y="Count")
+```
+
+```{r}
+df <- readRDS(file=co_1gram_news_en)
+idx <- unlist(lapply(stopwords("en"), function(stopword){return(which(df$word == stopword))}))
+df <- df[-idx,]
+saveRDS(df, co_1gram_nostop_news_en)
+```
+
+```{r}
+df <- readRDS(co_1gram_nostop_news_en)
+ggplot(df[1:20,], aes(x=reorder(word,freq), freq)) +
+  geom_col() +
+  xlab(NULL) +
+  coord_flip() +
+  labs(title="News Top 20 Word Frequence (without Stop Words)", x=NULL, y="Word Frequency")
+```
+
+```{r}
+library("RColorBrewer")
+library("wordcloud")
+# generate word cloud
+set.seed(1234)
+wordcloud(words = df$word, freq = df$freq, min.freq = 1,
+          max.words=200, random.order=FALSE, rot.per=0.35, 
+          colors=brewer.pal(8, "Dark2"))
+```
+
+```{r}
+lines_news[1]
+
+```
+
+```{r}
+print(ngram(lines_news[1], n=2), output="full")
+```
+
+```{r}
+# remove lines that contain less than 2 words, or ngram() would throw errors.
+lines_news <- lines_news[str_count(lines_news, "\\s+")>0] # 4375507 lines
+bigram <- ngram(lines_news, n=2) # this line takes long time. probably should sample the text first.
+df <- get.phrasetable(bigram)
+saveRDS(df, co_2gram_news_en)
+```
+
+```{r}
+df <- readRDS(co_2gram_news_en)
+ggplot(df[1:20,], aes(x=reorder(ngrams,freq), freq)) +
+  geom_col() +
+  xlab(NULL) +
+  coord_flip() +
+  labs(title="News Top 20 2-Gram Frequence (with Stop Words)", x=NULL, y="Word Frequency")
+```
+
+```{r}
+lines_news <- readRDS(co_tidy_news_en)
+# remove lines that contain less than 3 words, or ngram() would throw errors.
+lines_news <- lines_news[str_count(lines_news, "\\s+")>1] # 3803575 lines
+trigram <- ngram(lines_news, n=3) # this doesn't take long time surprisingly.
+df <- get.phrasetable(trigram)
+saveRDS(df, co_3gram_news_en)
+```
+
+```{r}
+df <- readRDS(co_3gram_news_en)
+ggplot(df[1:20,], aes(x=reorder(ngrams,freq), freq)) +
+  geom_col() +
+  xlab(NULL) +
+  coord_flip() +
+  labs(title="News Top 20 3-Gram Frequence (with Stop Words)", x=NULL, y="Word Frequency")
+```
+
+```{r}
+lines_news <- readRDS((co_tidy_nostop_news_en))
+# remove lines that contain less than 3 words, or ngram() would throw errors.
+lines_news <- lines_news[str_count(lines_news, "\\s+")>1] # 2780871 lines left
+trigram <- ngram(lines_news, n=3) # this took less than a minute surprisingly.
+df <- get.phrasetable(trigram)
+saveRDS(df, co_3gram_nostop_news_en)
+```
+
+```{r}
+df <- readRDS(co_3gram_nostop_news_en)
+ggplot(df[1:20,], aes(x=reorder(ngrams,freq), freq)) +
+  geom_col() +
+  xlab(NULL) +
+  coord_flip() +
+  labs(title="News Top 20 3-Gram Frequence (without Stop Words)", x=NULL, y="Word Frequency")
+```
+
+```{r}
+df <- readRDS(co_1gram_news_en) # with stop words
+df$count <- 1
+df$count <- cumsum(df$count)
+df$coverage <- cumsum(df$freq) / sum(df$freq) * 100
+df <- df[df$coverage <= 91,]
+
+# find the word counts for 50% and 90% coverage 
+points <- rbind(tail(df[df$coverage <= 50,], 1), tail(df[df$coverage <= 90,], 1))
+
+ggplot(data=df, aes(x=count, y=coverage, group=1)) +
+  geom_line()+
+  geom_point(data=points, colour="red", size=3) +
+  geom_text(data=points, aes(label=count), hjust=-1, vjust=1) +
+  ggtitle("Number of Words to Cover News Text (with Stop Words)") +
+  xlab("Number of Words") +
+  ylab("Coverage Percentage")
+```
+# Blogs 
+```{r}
+filepath <- "/Users/kumarshaket/Desktop/Coursera/Capstone Project/final/en_US/en_US.blogs.txt"
+con <- file(filepath) 
+lines_blogs <- readLines(con, skipNul=TRUE) # 2360148 lines
+close(con)
+
+lines_blogs <- tolower(lines_blogs)
+# split at all ".", "," and etc.
+lines_blogs <- unlist(strsplit(lines_blogs, "[.,:;!?(){}<>]+")) # 5398319 lines
+
+# replace all non-alphanumeric characters with a space at the beginning/end of a word.
+lines_blogs <- gsub("^[^a-z0-9]+|[^a-z0-9]+$", " ", lines_blogs) # at the begining/end of a line
+lines_blogs <- gsub("[^a-z0-9]+\\s", " ", lines_blogs) # before space
+lines_blogs <- gsub("\\s[^a-z0-9]+", " ", lines_blogs) # after space
+lines_blogs <- gsub("\\s+", " ", lines_blogs) # remove mutiple spaces
+lines_blogs <- str_trim(lines_blogs) # remove spaces at the beginning/end of the line
+saveRDS(lines_blogs, file=co_tidy_blog_en)
+```
+
+```{r}
+lines_blogs <- readRDS(file=co_tidy_blog_en)
+head(lines_blogs, 20)
+```
+
+```{r}
+lines_blogs <- str_trim(lines_blogs) # remove spaces at the beginning/end of the line
+lines_blogs <- gsub("\\s+", " ", lines_blogs) # remove mutiple spaces
+lines_blogs <- lines_blogs[nchar(lines_blogs)>0] # remove blank lines. reduce the elements from 5398319 to 5059787
+saveRDS(lines_blogs, file=co_tidy_nostop_blog_en)
+```
+
+
+```{r}
+# split words by space
+words <- unlist(strsplit(lines_blogs, "\\s+"))
+
+# count word frequence
+word.freq <- table(words)
+
+# convert to data frame
+df <- cbind.data.frame(names(word.freq), as.integer(word.freq))
+names(df) <- c('word', 'freq')
+row.names(df) <- df[,1]
+
+# sort words by frequence descending
+df <- df[order(-df$freq),]
+
+# save as RDS file
+saveRDS(df, file=co_1gram_blog_en)
+```
+
+```{r}
+# read word frequence data
+df <- readRDS(file=co_1gram_blog_en)
+# locate "i'm" 
+df["i'm",]
+```
+
+```{r}
+ggplot(df[1:20,], aes(x=reorder(word,freq), freq)) +
+  geom_col() +
+  xlab(NULL) +
+  coord_flip() +
+  labs(title="Blogs Top 20 Word Frequence (with Stop Words)", x=NULL, y="Word Frequency")
+```
+
+```{r}
+plot(df[1:500,]$freq,
+     main='Blogs Top 500 Word Frequence',
+     ylab="Frequence",
+     xlab="Word")
+```
+
+```{r}
+ggplot(data=df[1:250,], aes(x=df[1:250,]$freq)) + 
+  geom_histogram(colour="black", fill="white", breaks=seq(0, 900000,by=3000)) + 
+  labs(title="Histogram of Blogs Top 250 Word Frequence", x="Word Frequency", y="Count")
+```
+
+```{r}
+df <- readRDS(file=co_1gram_blog_en)
+idx <- unlist(lapply(stopwords("en"), function(stopword){return(which(df$word == stopword))}))
+df <- df[-idx,]
+saveRDS(df, co_1gram_nostop_blog_en)
+```
+
+```{r}
+df <- readRDS(co_1gram_nostop_blog_en)
+ggplot(df[1:20,], aes(x=reorder(word,freq), freq)) +
+  geom_col() +
+  xlab(NULL) +
+  coord_flip() +
+  labs(title="Blogs Top 20 Word Frequence (without Stop Words)", x=NULL, y="Word Frequency")
+```
+
+```{r}
+library("RColorBrewer")
+library("wordcloud")
+# generate word cloud
+set.seed(1234)
+wordcloud(words = df$word, freq = df$freq, min.freq = 1,
+          max.words=200, random.order=FALSE, rot.per=0.35, 
+          colors=brewer.pal(8, "Dark2"))
+```
+
+```{r}
+lines_blogs[1]
+
+```
+
+```{r}
+print(ngram(lines_blogs[1], n=2), output="full")
+```
+
+```{r}
+# remove lines that contain less than 2 words, or ngram() would throw errors.
+lines_blogs <- lines_blogs[str_count(lines_blogs, "\\s+")>0] # 4375507 lines
+bigram <- ngram(lines_blogs, n=2) # this line takes long time. probably should sample the text first.
+df <- get.phrasetable(bigram)
+saveRDS(df, co_2gram_blog_en)
+```
+
+```{r}
+df <- readRDS(co_2gram_blog_en)
+ggplot(df[1:20,], aes(x=reorder(ngrams,freq), freq)) +
+  geom_col() +
+  xlab(NULL) +
+  coord_flip() +
+  labs(title="Blogs Top 20 2-Gram Frequence (with Stop Words)", x=NULL, y="Word Frequency")
+```
+
+```{r}
+lines_news <- readRDS(co_tidy_blog_en)
+# remove lines that contain less than 3 words, or ngram() would throw errors.
+lines_blogs <- lines_blogs[str_count(lines_blogs, "\\s+")>1] # 3803575 lines
+trigram <- ngram(lines_blogs, n=3) # this doesn't take long time surprisingly.
+df <- get.phrasetable(trigram)
+saveRDS(df, co_3gram_blog_en)
+```
+
+```{r}
+df <- readRDS(co_3gram_blog_en)
+ggplot(df[1:20,], aes(x=reorder(ngrams,freq), freq)) +
+  geom_col() +
+  xlab(NULL) +
+  coord_flip() +
+  labs(title="Blogs Top 20 3-Gram Frequence (with Stop Words)", x=NULL, y="Word Frequency")
+```
+
+```{r}
+lines_blogs <- readRDS((co_tidy_nostop_blog_en))
+# remove lines that contain less than 3 words, or ngram() would throw errors.
+lines_blogs <- lines_blogs[str_count(lines_blogs, "\\s+")>1] # 2780871 lines left
+trigram <- ngram(lines_blogs, n=3) # this took less than a minute surprisingly.
+df <- get.phrasetable(trigram)
+saveRDS(df, co_3gram_nostop_blog_en)
+```
+
+```{r}
+df <- readRDS(co_3gram_nostop_blog_en)
+ggplot(df[1:20,], aes(x=reorder(ngrams,freq), freq)) +
+  geom_col() +
+  xlab(NULL) +
+  coord_flip() +
+  labs(title="Blogs Top 20 3-Gram Frequence (without Stop Words)", x=NULL, y="Word Frequency")
+```
+
+```{r}
+df <- readRDS(co_1gram_blog_en) # with stop words
+df$count <- 1
+df$count <- cumsum(df$count)
+df$coverage <- cumsum(df$freq) / sum(df$freq) * 100
+df <- df[df$coverage <= 91,]
+
+# find the word counts for 50% and 90% coverage 
+points <- rbind(tail(df[df$coverage <= 50,], 1), tail(df[df$coverage <= 90,], 1))
+
+ggplot(data=df, aes(x=count, y=coverage, group=1)) +
+  geom_line()+
+  geom_point(data=points, colour="red", size=3) +
+  geom_text(data=points, aes(label=count), hjust=-1, vjust=1) +
+  ggtitle("Number of Words to Cover Blogs Text (with Stop Words)") +
+  xlab("Number of Words") +
+  ylab("Coverage Percentage")
+```

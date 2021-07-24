@@ -1,0 +1,184 @@
+---
+title: "Swift Key Capstone Project Natural processing 1"
+author: "Kumar Shaket"
+date: "07/07/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(stringr)
+library(tm)
+library(ggplot2)
+library(ngram)
+
+# constants
+co_twitter_en = "/Users/kumarshaket/Desktop/Coursera/Capstone Project/final/en_US/en_US.twitter.txt"
+co_blogs_en = "/Users/kumarshaket/Desktop/Coursera/Capstone Project/final/en_US/en_US.blogs.txt"
+co_news_en = "/Users/kumarshaket/Desktop/Coursera/Capstone Project/final/en_US/en_US.news.txt"
+co_text_attr_en = "/Users/kumarshaket/Desktop/Coursera/Capstone Project/final/text_attr_en.rds"
+#twitter
+co_tidy_twitter_en = "/Users/kumarshaket/Desktop/Coursera/Capstone Project/final/tidy_twitter_en.rds"
+co_tidy_nostop_twitter_en = "/Users/kumarshaket/Desktop/Coursera/Capstone Project/final/tidy_nostop_twitter_en.rds"
+co_1gram_twitter_en = "/Users/kumarshaket/Desktop/Coursera/Capstone Project/final/1gram_twitter_en.rds"
+co_2gram_twitter_en = "/Users/kumarshaket/Desktop/Coursera/Capstone Project/final/2gram_twitter_en.rds"
+co_3gram_twitter_en = "/Users/kumarshaket/Desktop/Coursera/Capstone Project/final/3gram_twitter_en.rds"
+co_1gram_nostop_twitter_en = "/Users/kumarshaket/Desktop/Coursera/Capstone Project/final/1gram_nostop_twitter_en.rds"
+co_2gram_nostop_twitter_en = "/Users/kumarshaket/Desktop/Coursera/Capstone Project/final/2gram_nostop_twitter_en.rds"
+co_3gram_nostop_twitter_en = "/Users/kumarshaket/Desktop/Coursera/Capstone Project/final/3gram_nostop_twitter_en.rds"
+#news
+co_tidy_news_en = "/Users/kumarshaket/Desktop/Coursera/Capstone Project/final/tidy_news_en.rds"
+co_tidy_nostop_news_en = "/Users/kumarshaket/Desktop/Coursera/Capstone Project/final/tidy_nostop_news_en.rds"
+co_1gram_news_en = "/Users/kumarshaket/Desktop/Coursera/Capstone Project/final/1gram_news_en.rds"
+co_2gram_news_en = "/Users/kumarshaket/Desktop/Coursera/Capstone Project/final/2gram_news_en.rds"
+co_3gram_news_en = "/Users/kumarshaket/Desktop/Coursera/Capstone Project/final/3gram_news_en.rds"
+co_1gram_nostop_news_en = "/Users/kumarshaket/Desktop/Coursera/Capstone Project/final/1gram_nostop_news_en.rds"
+co_2gram_nostop_news_en = "/Users/kumarshaket/Desktop/Coursera/Capstone Project/final/2gram_nostop_news_en.rds"
+co_3gram_nostop_news_en = "/Users/kumarshaket/Desktop/Coursera/Capstone Project/final/3gram_nostop_news_en.rds"
+#blogs
+co_tidy_blog_en = "/Users/kumarshaket/Desktop/Coursera/Capstone Project/final/tidy_blog_en.rds"
+co_tidy_nostop_blog_en = "/Users/kumarshaket/Desktop/Coursera/Capstone Project/final/tidy_nostop_blog_en.rds"
+co_1gram_blog_en = "/Users/kumarshaket/Desktop/Coursera/Capstone Project/final/1gram_blog_en.rds"
+co_2gram_blog_en = "/Users/kumarshaket/Desktop/Coursera/Capstone Project/final/2gram_blog_en.rds"
+co_3gram_blog_en = "/Users/kumarshaket/Desktop/Coursera/Capstone Project/final/3gram_blog_en.rds"
+co_1gram_nostop_blog_en = "/Users/kumarshaket/Desktop/Coursera/Capstone Project/final/1gram_nostop_blog_en.rds"
+co_2gram_nostop_blog_en = "/Users/kumarshaket/Desktop/Coursera/Capstone Project/final/2gram_nostop_blog_en.rds"
+co_3gram_nostop_blog_en = "/Users/kumarshaket/Desktop/Coursera/Capstone Project/final/3gram_nostop_blog_en.rds"
+co_3gram_en = "/Users/kumarshaket/Desktop/Coursera/Capstone Project/final/3gram_en.rds"
+```
+
+```{r}
+tidyText <- function(file, tidyfile) {
+  con <- file(file, open="r")
+  lines <- readLines(con)
+  close(con)
+
+  lines <- tolower(lines)
+  # split at all ".", "," and etc.
+  lines <- unlist(strsplit(lines, "[.,:;!?(){}<>]+")) # 5398319 lines
+  
+  # replace all non-alphanumeric characters with a space at the beginning/end of a word.
+  lines <- gsub("^[^a-z0-9]+|[^a-z0-9]+$", " ", lines) # at the begining/end of a line
+  lines <- gsub("[^a-z0-9]+\\s", " ", lines) # before space
+  lines <- gsub("\\s[^a-z0-9]+", " ", lines) # after space
+  lines <- gsub("\\s+", " ", lines) # remove mutiple spaces
+  lines <- str_trim(lines) # remove spaces at the beginning/end of the line
+  
+  saveRDS(lines, file=tidyfile) 
+}
+
+tidyText(co_news_en, co_tidy_news_en)
+tidyText(co_blogs_en, co_tidy_blog_en)
+tidyText(co_twitter_en,co_tidy_twitter_en)
+
+df_news <- readRDS(co_tidy_news_en)
+df_blogs <- readRDS(co_tidy_blog_en)
+df_twitter <- readRDS(co_tidy_twitter_en)
+lines <- c(df_news, df_blogs, df_twitter)
+rm(df_news, df_blogs, df_twitter)
+lines <- sample(lines,500000)
+# remove lines that contain less than 3 words, or ngram() would throw errors.
+lines <- lines[str_count(lines, "\\s+")>1] # reduce 10483160 elements to 7730009 elements
+# this line took long time
+trigram <- ngram(lines, n=3); rm(lines)
+# this line took long time
+df <- get.phrasetable(trigram); rm(trigram)
+saveRDS(df, co_3gram_en)
+```
+
+For each of the sentence fragments below use your natural language processing algorithm to predict the next word in the sentence.
+1. The guy in front of me just bought a pound of bacon, a bouquet, and a case of
+
+Options: prezels, soda, beer, cheese
+```{r}
+df <- readRDS(co_3gram_en)
+head(df[grep("^case of", df[,1]),], 10)
+```
+2. You’re the reason why I smile everyday. Can you follow me please? It would mean the
+
+Options: world, best, most, universe
+```{r}
+head(df[grep("^mean the ", df[,1]),], 10)
+```
+3. Hey sunshine, can you follow me and make me the
+
+Options: bluest, smelliest, saddest, happiest
+```{r}
+rbind(df[grep("^me the bluest", df[,1]),],
+      df[grep("^me the smelliest", df[,1]),],
+      df[grep("^me the saddest", df[,1]),],
+      df[grep("^me the happiest", df[,1]),])
+```
+
+4. Very early observations on the Bills game: Offence still struggling but the
+
+Options: crowd, defense, referees, players(wrong)
+
+```{r}
+head(df[grep("^struggling but", df[,1]),], 10)
+```
+
+```{r}
+str <- "Very early observations on the Bills game: Offence still struggling but the"
+str <- removeWords(str, stopwords("en")); str <- gsub("\\s+", " ", str); str
+```
+
+```{r}
+head(df[grep("^still struggling", df[,1]),], 10)
+```
+
+5. Go on a romantic date at the
+
+Options: mall, grocery(wrong), movies, beach
+
+```{r}
+head(df[grep("romantic date", df[,1]),],10)
+```
+
+6. Well I’m pretty sure my granny has some old bagpipes in her garage I’ll dust them o􀃗 and be on my
+
+Options: way, horse, motorcycle, phone
+
+```{r}
+head(df[grep("^on my ", df[,1]),], 10)
+```
+
+7. Ohhhhh #PointBreak is on tomorrow. Love that film and haven’t seen it in quite some
+
+Options: thing, weeks, time, years
+
+```{r}
+head(df[grep("^quite some ", df[,1]),], 10)
+```
+
+8. After the ice bucket challenge Louis will push his long wet hair out of his eyes with his little
+
+Options: fingers, eyes, ears, toes
+
+```{r}
+head(df[grep("^his little ", df[,1]),], 10)
+```
+
+9. Be grateful for the good times and keep the faith during the
+
+Options: worse, bad, hard, sad
+
+```{r}
+head(df[grep("^during the ", df[,1]),], 10)
+```
+
+10. If this isn’t the cutest thing you’ve ever seen, then you must be
+
+Options: asleep, insensitive, callous, insane
+
+```{r}
+head(df[grep("^must be ", df[,1]),], 10)
+```
+
+```{r}
+str <- "If this isn't the cutest thing you've ever seen, then you must be"
+str <- removeWords(str, stopwords("en")); str <- gsub("\\s+", " ", str); str
+```

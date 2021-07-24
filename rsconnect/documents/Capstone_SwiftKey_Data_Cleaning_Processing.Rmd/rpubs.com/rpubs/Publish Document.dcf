@@ -1,0 +1,10 @@
+name: Publish Document
+title:
+username:
+account: rpubs
+server: rpubs.com
+hostUrl: rpubs.com
+appId: https://api.rpubs.com/api/v1/document/786732/715392ff61a44f59b5427e892ecec34e
+bundleId: https://api.rpubs.com/api/v1/document/786732/715392ff61a44f59b5427e892ecec34e
+url: http://rpubs.com/kumarshaket/786732/edit
+when: 1624994839.53781
